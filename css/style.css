@@ -1,0 +1,110 @@
+/* Game Board Styling */
+.board-container {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.game-board {
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    grid-gap: 1px;
+    background-color: #e9ecef;
+    padding: 1px;
+    width: max-content;
+    margin: 0 auto;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid #dee2e6;
+}
+
+.cell:hover {
+    background-color: #f8f9fa;
+}
+
+.cell.x {
+    color: #dc3545;
+}
+
+.cell.o {
+    color: #0d6efd;
+}
+
+.cell.winning-cell {
+    background-color: #d4edda;
+}
+
+.cell:focus {
+    outline: 2px solid #0d6efd;
+    z-index: 1;
+}
+
+/* Game Status and Alerts */
+.game-status.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.game-status.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.game-status.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.game-status.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    color: #856404;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .cell {
+        width: 25px;
+        height: 25px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 768px) {
+    .cell {
+        width: 20px;
+        height: 20px;
+        font-size: 12px;
+    }
+}
+
+/* Timer styling */
+#timer.warning {
+    color: #dc3545;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Accessibility focus styles */
+button:focus, input:focus, .btn:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: none;
+}
