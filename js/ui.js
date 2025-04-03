@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Add click event
                 cell.addEventListener('click', () => handleCellClick(row, col));
                 
-                // Add keyboard support
+                // Add keyboard support - fixed line 50
                 cell.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         handleCellClick(row, col);
@@ -116,19 +116,24 @@ document.addEventListener('DOMContentLoaded', () => {
             currentPlayerDisplay.textContent = result.currentPlayer;
         }
         
-        // Handle AI move if needed
+        // Handle AI move if needed - fixed line 108
         if (result.valid && !result.gameOver && result.aiMove) {
             // Show loading modal
             loadingModal.show();
             
             setTimeout(() => {
-                // Process AI move result
-                updateBoard();
-                updateGameStatus(result.aiMove);
+                // Make AI move
+                const aiMoveResult = game.makeAiMove();
                 
-                // Update current player display
-                if (result.aiMove.currentPlayer) {
-                    currentPlayerDisplay.textContent = result.aiMove.currentPlayer;
+                // Process AI move result
+                if (aiMoveResult) {
+                    updateBoard();
+                    updateGameStatus(aiMoveResult);
+                    
+                    // Update current player display
+                    if (aiMoveResult.currentPlayer) {
+                        currentPlayerDisplay.textContent = aiMoveResult.currentPlayer;
+                    }
                 }
                 
                 // Hide loading modal

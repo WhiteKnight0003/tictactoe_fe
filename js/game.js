@@ -78,7 +78,9 @@ class TicTacToeGame {
                 gameOver: true,
                 winner: this.currentSymbol,
                 winningCells: this.winningCells,
-                message: `Player ${this.currentSymbol} wins!`
+                message: `Player ${this.currentSymbol} wins!`,
+                board: this.board,
+                currentPlayer: this.currentSymbol
             };
         }
         
@@ -90,7 +92,9 @@ class TicTacToeGame {
                 valid: true,
                 gameOver: true,
                 draw: true,
-                message: "Game ended in a draw!"
+                message: "Game ended in a draw!",
+                board: this.board,
+                currentPlayer: this.currentSymbol
             };
         }
         
@@ -98,18 +102,19 @@ class TicTacToeGame {
         this.currentSymbol = this.currentSymbol === 'X' ? 'O' : 'X';
         
         // If it's the AI's turn
-        let aiMoveResult = null;
-        if (this.currentSymbol === this.aiSymbol && this.gameActive) {
-            aiMoveResult = this.makeAiMove();
-        }
-        
-        return {
+        const result = {
             valid: true,
             board: this.board,
             currentPlayer: this.currentSymbol,
-            aiMove: aiMoveResult,
             timeRemaining: this.formatTime(this.timeRemaining)
         };
+        
+        // Add AI move info if applicable
+        if (this.currentSymbol === this.aiSymbol && this.gameActive) {
+            result.aiMove = true;
+        }
+        
+        return result;
     }
     
     /**
@@ -342,7 +347,7 @@ class TicTacToeGame {
         ];
         
         for (const dir of directions) {
-            const line = [];
+            let line = []; // Changed from const to let
             
             // Look in both directions
             for (let i = -this.winningLength + 1; i < this.winningLength; i++) {
