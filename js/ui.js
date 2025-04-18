@@ -28,6 +28,33 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Create the game board
         createGameBoard();
+        
+        // Thêm style cho hiệu ứng đánh dấu nước đi của AI
+        addAIHighlightStyle();
+    }
+    
+    /**
+     * Thêm CSS cho hiệu ứng đánh dấu nước đi của AI
+     */
+    function addAIHighlightStyle() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .ai-last-move {
+                animation: highlight 2s ease-out;
+            }
+            
+            @keyframes highlight {
+                0% {
+                    background-color: rgba(255, 217, 102, 0.8);
+                    box-shadow: 0 0 15px rgba(255, 217, 102, 0.8);
+                }
+                100% {
+                    background-color: transparent;
+                    box-shadow: none;
+                }
+            }
+        `;
+        document.head.appendChild(style);
     }
     
     /**
@@ -40,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let col = 0; col < 20; col++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
+                cell.id = `cell-${row}-${col}`;
                 cell.dataset.row = row;
                 cell.dataset.col = col;
                 cell.setAttribute('role', 'button');
@@ -125,6 +153,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Make AI move
                 const aiMoveResult = game.makeAiMove();
                 
+                // Lưu nước đi mới nhất của AI
+                if (aiMoveResult && aiMoveResult.valid) {
+                    // Tìm vị trí nước đi của AI
+                    for (let r = 0; r < 20; r++) {
+                        for (let c = 0; c < 20; c++) {
+                            // Nếu ô này không trống trong kết quả mới nhưng trống trong result
+                            if (aiMoveResult.board[r][c] !== '' && (result.board[r][c] === '')) {
+                                // Lưu vị trí nước đi mới nhất của AI
+                                game.lastAiMove = {row: r, col: c};
+                                break;
+                            }
+                        }
+                    }
+                }
+                
                 // Process AI move result
                 if (aiMoveResult) {
                     updateBoard();
@@ -149,6 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const board = game.board;
         const cells = gameBoard.children;
         
+        // Xóa tất cả các class ai-last-move hiện tại
+        document.querySelectorAll('.ai-last-move').forEach(cell => {
+            cell.classList.remove('ai-last-move');
+        });
+        
         for (let row = 0; row < 20; row++) {
             for (let col = 0; col < 20; col++) {
                 const index = row * 20 + col;
@@ -169,6 +217,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Mark winning cells
                 if (game.winningCells.some(pos => pos.row === row && pos.col === col)) {
                     cell.classList.add('winning-cell');
+                }
+                
+                // Đánh dấu nước đi mới nhất của AI
+                if (game.lastAiMove && game.lastAiMove.row === row && game.lastAiMove.col === col) {
+                    cell.classList.add('ai-last-move');
                 }
             }
         }
@@ -243,6 +296,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetGame() {
         // Reset game logic
         game.reset();
+        
+        // Reset last AI move tracking
+        game.lastAiMove = null;
         
         // Clear the timer
         if (timerInterval) {

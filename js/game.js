@@ -15,6 +15,8 @@ class TicTacToeGame {
         this.timerDuration = 15 * 60; // 15 minutes in seconds
         this.timeRemaining = this.timerDuration;
         this.timerInterval = null;
+        // Giữ nguyên code hiện tại và thêm dòng sau:
+        this.lastAiMove = null; // Lưu nước đi mới nhất của AI
     }
 
     /**
@@ -131,6 +133,8 @@ class TicTacToeGame {
         }
         
         if (move) {
+            // Lưu nước đi mới nhất của AI
+            this.lastAiMove = move;
             return this.makeMove(move.row, move.col);
         }
         return null;
@@ -172,8 +176,8 @@ class TicTacToeGame {
         const blockMove = this.findWinningMove(this.playerSymbol);
         if (blockMove) return blockMove;
         
-        // Otherwise, find the best strategic move
-        return this.findStrategicMove();
+        // If no immediate win/block, use enhanced strategic evaluation
+        return this.findEnhancedStrategicMove();
     }
     
     /**
@@ -205,8 +209,396 @@ class TicTacToeGame {
     }
     
     /**
-     * Find the best strategic move
-     * Uses a simple heuristic approach for the hard AI
+     * Find the best strategic move using enhanced heuristics
+     */
+    findEnhancedStrategicMove() {
+        // Initialize score board
+        const scores = Array(20).fill().map(() => Array(20).fill(0));
+        
+        // Find cells worth considering (near existing moves)
+        const candidateMoves = this.findCandidateMoves();
+        
+        // If first few moves of the game and no candidates, prefer center region
+        if (candidateMoves.length === 0) {
+            const centerRow = Math.floor(Math.random() * 6) + 7; // 7-12
+            const centerCol = Math.floor(Math.random() * 6) + 7; // 7-12
+            return {row: centerRow, col: centerCol};
+        }
+        
+        // Score candidate positions
+        for (const {row, col} of candidateMoves) {
+            scores[row][col] = this.enhancedScorePosition(row, col);
+        }
+        
+        // Find cell with highest score
+        let maxScore = -Infinity;
+        let bestMoves = [];
+        
+        for (const {row, col} of candidateMoves) {
+            if (scores[row][col] > maxScore) {
+                maxScore = scores[row][col];
+                bestMoves = [{row, col}];
+            } else if (scores[row][col] === maxScore) {
+                bestMoves.push({row, col});
+            }
+        }
+        
+        // If we found good moves, choose one at random
+        if (bestMoves.length > 0) {
+            const randomIndex = Math.floor(Math.random() * bestMoves.length);
+            return bestMoves[randomIndex];
+        }
+        
+        // Fallback to easy AI if no good move found
+        return this.makeEasyAIMove();
+    }
+    
+    /**
+     * Find candidate moves (empty cells near existing pieces)
+     * @returns {Array} List of candidate moves {row, col}
+     */
+    findCandidateMoves() {
+        const candidates = new Set();
+        const proximity = 2; // Consider cells within 2 spaces of existing moves
+        
+        // Iterate through the board to find existing pieces
+        for (let row = 0; row < 20; row++) {
+            for (let col = 0; col < 20; col++) {
+                if (this.board[row][col] !== '') {
+                    // Add empty neighbors to candidates
+                    for (let dr = -proximity; dr <= proximity; dr++) {
+                        for (let dc = -proximity; dc <= proximity; dc++) {
+                            const newRow = row + dr;
+                            const newCol = col + dc;
+                            
+                            // Check bounds and that cell is empty
+                            if (newRow >= 0 && newRow < 20 && 
+                                newCol >= 0 && newCol < 20 && 
+                                this.board[newRow][newCol] === '') {
+                                // Store as string to use Set's uniqueness property
+                                candidates.add(`${newRow},${newCol}`);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Convert back to array of objects
+        const result = [];
+        candidates.forEach(coord => {
+            const [row, col] = coord.split(',').map(Number);
+            result.push({row, col});
+        });
+        
+        return result;
+    }
+    
+    /**
+     * Enhanced scoring function for board positions
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @returns {number} Position score
+     */
+    enhancedScorePosition(row, col) {
+        let aiScore = 0;
+        let playerScore = 0;
+        
+        // Directions: horizontal, vertical, diagonal, anti-diagonal
+        const directions = [
+            [{row: 0, col: 1}, {row: 0, col: -1}],  // horizontal
+            [{row: 1, col: 0}, {row: -1, col: 0}],  // vertical
+            [{row: 1, col: 1}, {row: -1, col: -1}], // diagonal
+            [{row: 1, col: -1}, {row: -1, col: 1}]  // anti-diagonal
+        ];
+        
+        // Check each direction for patterns
+        for (const dirPair of directions) {
+            // Evaluate AI's potential in this direction
+            const aiPatterns = this.evaluateDirectionalPatterns(row, col, dirPair, this.aiSymbol);
+            aiScore += aiPatterns.score;
+            
+            // Evaluate player's potential in this direction
+            const playerPatterns = this.evaluateDirectionalPatterns(row, col, dirPair, this.playerSymbol);
+            playerScore += playerPatterns.score;
+            
+            // Special case: if player is one move away from winning, block is critical
+            if (playerPatterns.threatLevel >= 4) {
+                playerScore += 1000;
+            }
+            
+            // Special case: if AI can create a fork (multiple winning threats)
+            if (aiPatterns.threatLevel >= 3 && this.detectFork(row, col, this.aiSymbol)) {
+                aiScore += 800;
+            }
+        }
+        
+        // Balance offense and defense with slight preference for offense
+        const finalScore = (aiScore * 1.2) + playerScore;
+        
+        // Add a small preference for center-ish positions
+        const centerDistance = Math.sqrt(Math.pow(row - 9.5, 2) + Math.pow(col - 9.5, 2));
+        const centerBonus = Math.max(0, (10 - centerDistance)) / 2;
+        
+        return finalScore + centerBonus;
+    }
+    
+    /**
+     * Evaluate patterns in a specific direction
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @param {Array} dirPair - Pair of directions
+     * @param {string} symbol - Symbol to evaluate for
+     * @returns {Object} Pattern evaluation {score, threatLevel}
+     */
+    evaluateDirectionalPatterns(row, col, dirPair, symbol) {
+        let score = 0;
+        let maxConsecutive = 0;
+        let openEnds = 0;
+        
+        // Place the symbol temporarily
+        const originalValue = this.board[row][col];
+        this.board[row][col] = symbol;
+        
+        // Check both directions
+        const line = [];
+        line.push({row, col}); // Add current position
+        
+        // Look forward and backward
+        for (const dir of dirPair) {
+            for (let i = 1; i < 6; i++) { // Look up to 5 spaces in each direction
+                const newRow = row + dir.row * i;
+                const newCol = col + dir.col * i;
+                
+                // Check bounds
+                if (newRow < 0 || newRow >= 20 || newCol < 0 || newCol >= 20) {
+                    break;
+                }
+                
+                // Check cell content
+                if (this.board[newRow][newCol] === symbol) {
+                    line.push({row: newRow, col: newCol});
+                } else if (this.board[newRow][newCol] === '') {
+                    // Empty space - potential for growth
+                    openEnds++;
+                    break;
+                } else {
+                    // Opponent's piece - blocked
+                    break;
+                }
+            }
+        }
+        
+        // Restore the original value
+        this.board[row][col] = originalValue;
+        
+        // Calculate max consecutive pieces
+        maxConsecutive = line.length;
+        
+        // Calculate score based on consecutive pieces and open ends
+        if (maxConsecutive >= 5) {
+            // Winning move
+            score = 10000;
+        } else if (maxConsecutive === 4) {
+            // Four in a row
+            if (openEnds === 2) {
+                // Open-four (extremely dangerous)
+                score = 5000;
+            } else if (openEnds === 1) {
+                // Semi-open four (still dangerous)
+                score = 1000;
+            }
+        } else if (maxConsecutive === 3) {
+            // Three in a row
+            if (openEnds === 2) {
+                // Open-three (strong threat)
+                score = 500;
+            } else if (openEnds === 1) {
+                // Semi-open three (moderate threat)
+                score = 100;
+            }
+        } else if (maxConsecutive === 2) {
+            // Two in a row
+            if (openEnds === 2) {
+                // Open-two (potential development)
+                score = 50;
+            } else if (openEnds === 1) {
+                // Semi-open two (minor potential)
+                score = 10;
+            }
+        } else {
+            // Single piece
+            score = openEnds * 5;
+        }
+        
+        // Calculate threat level (higher means more urgent)
+        // Used to identify critical defensive moves
+        let threatLevel = maxConsecutive;
+        if (openEnds > 0) threatLevel += openEnds;
+        
+        return { score, threatLevel };
+    }
+    
+    /**
+     * Detect if a move creates a fork (multiple winning threats)
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @param {string} symbol - Symbol to check for
+     * @returns {boolean} True if move creates a fork
+     */
+    detectFork(row, col, symbol) {
+        // Place symbol temporarily
+        const originalValue = this.board[row][col];
+        this.board[row][col] = symbol;
+        
+        const directions = [
+            {row: 0, col: 1},  // horizontal
+            {row: 1, col: 0},  // vertical
+            {row: 1, col: 1},  // diagonal
+            {row: 1, col: -1}  // anti-diagonal
+        ];
+        
+        let threatCount = 0;
+        
+        // Count threats in each direction
+        for (const dir of directions) {
+            if (this.detectThreat(row, col, dir, symbol)) {
+                threatCount++;
+            }
+        }
+        
+        // Restore original value
+        this.board[row][col] = originalValue;
+        
+        // Multiple threats = fork
+        return threatCount >= 2;
+    }
+    
+    /**
+     * Detect if there is a serious threat in a direction
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @param {object} dir - Direction {row, col}
+     * @param {string} symbol - Symbol to check
+     * @returns {boolean} True if threat exists
+     */
+    detectThreat(row, col, dir, symbol) {
+        // Check for patterns like open-threes that represent threats
+        const consecutive = this.countConsecutive(row, col, dir, symbol);
+        const openEnds = this.countOpenEnds(row, col, dir, symbol);
+        
+        // Consider it a threat if:
+        // - 4 in a row with at least one open end
+        // - 3 in a row with two open ends
+        return (consecutive >= 4 && openEnds >= 1) || 
+               (consecutive >= 3 && openEnds >= 2);
+    }
+    
+    /**
+     * Count consecutive pieces in a direction
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @param {object} dir - Direction {row, col}
+     * @param {string} symbol - Symbol to check
+     * @returns {number} Count of consecutive pieces
+     */
+    countConsecutive(row, col, dir, symbol) {
+        let count = 1; // Start with the piece at (row, col)
+        
+        // Check forward
+        for (let i = 1; i < 5; i++) {
+            const newRow = row + dir.row * i;
+            const newCol = col + dir.col * i;
+            
+            if (newRow < 0 || newRow >= 20 || newCol < 0 || newCol >= 20 ||
+                this.board[newRow][newCol] !== symbol) {
+                break;
+            }
+            count++;
+        }
+        
+        // Check backward
+        for (let i = 1; i < 5; i++) {
+            const newRow = row - dir.row * i;
+            const newCol = col - dir.col * i;
+            
+            if (newRow < 0 || newRow >= 20 || newCol < 0 || newCol >= 20 ||
+                this.board[newRow][newCol] !== symbol) {
+                break;
+            }
+            count++;
+        }
+        
+        return count;
+    }
+    
+    /**
+     * Count open ends in a direction
+     * @param {number} row - Row index
+     * @param {number} col - Column index
+     * @param {object} dir - Direction {row, col}
+     * @param {string} symbol - Symbol to check
+     * @returns {number} Number of open ends (0-2)
+     */
+    countOpenEnds(row, col, dir, symbol) {
+        let openEnds = 0;
+        
+        // Find the extent of the line
+        let startRow = row;
+        let startCol = col;
+        let endRow = row;
+        let endCol = col;
+        
+        // Find start of line
+        for (let i = 1; i < 5; i++) {
+            const newRow = row - dir.row * i;
+            const newCol = col - dir.col * i;
+            
+            if (newRow < 0 || newRow >= 20 || newCol < 0 || newCol >= 20 ||
+                this.board[newRow][newCol] !== symbol) {
+                break;
+            }
+            startRow = newRow;
+            startCol = newCol;
+        }
+        
+        // Find end of line
+        for (let i = 1; i < 5; i++) {
+            const newRow = row + dir.row * i;
+            const newCol = col + dir.col * i;
+            
+            if (newRow < 0 || newRow >= 20 || newCol < 0 || newCol >= 20 ||
+                this.board[newRow][newCol] !== symbol) {
+                break;
+            }
+            endRow = newRow;
+            endCol = newCol;
+        }
+        
+        // Check if start-1 is open
+        const checkStartRow = startRow - dir.row;
+        const checkStartCol = startCol - dir.col;
+        if (checkStartRow >= 0 && checkStartRow < 20 && 
+            checkStartCol >= 0 && checkStartCol < 20 &&
+            this.board[checkStartRow][checkStartCol] === '') {
+            openEnds++;
+        }
+        
+        // Check if end+1 is open
+        const checkEndRow = endRow + dir.row;
+        const checkEndCol = endCol + dir.col;
+        if (checkEndRow >= 0 && checkEndRow < 20 && 
+            checkEndCol >= 0 && checkEndCol < 20 &&
+            this.board[checkEndRow][checkEndCol] === '') {
+            openEnds++;
+        }
+        
+        return openEnds;
+    }
+    
+    /**
+     * Find strategic move using original simple approach
+     * (Kept for compatibility but no longer used)
      */
     findStrategicMove() {
         // Initialize score board
@@ -249,7 +641,7 @@ class TicTacToeGame {
     }
     
     /**
-     * Score a position based on strategic value
+     * Original score position method (kept for compatibility)
      * @param {number} row - Row index
      * @param {number} col - Column index
      * @returns {number} Score
@@ -279,7 +671,7 @@ class TicTacToeGame {
     }
     
     /**
-     * Score a direction from a position
+     * Original score direction method (kept for compatibility)
      * @param {number} row - Row index
      * @param {number} col - Column index
      * @param {Array} dirPair - Pair of directions
