@@ -13,7 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const timerDisplay = document.getElementById('timer');
     const newGameBtn = document.getElementById('new-game-btn');
     const loadingModal = new bootstrap.Modal(document.getElementById('loading-modal'));
-    
+    const headlines = document.getElementById('head');
+
+    //Them
+    const timerInputDisplay = document.getElementById('timer-display');
+    const symbolX = document.getElementById('symbol-x');
+    const symbolO = document.getElementById('symbol-o');
+    const difficultyEasy = document.getElementById('difficulty-easy');
+    const timerButton = document.getElementById('timer-button');
+
     // Game state variables
     let timerInterval;
     let warningThreshold = 60; // 1 minute warning
@@ -31,6 +39,57 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Thêm style cho hiệu ứng đánh dấu nước đi của AI
         addAIHighlightStyle();
+
+        //Them
+        setupTimerEvents();
+    }
+    //Them
+    function setupTimerEvents() {
+        // Mặc định hiển thị 15:00 cho timer
+        if (!timerInputDisplay.textContent || timerInputDisplay.textContent.trim() === '') {
+            timerInputDisplay.textContent = '00:03:00';
+        }
+        
+        // Xử lý nút Timer (bật/tắt chức năng đếm thời gian)
+        timerButton.addEventListener('click', function() {
+            if (timerInputDisplay.classList.contains('disabled')) {
+                // Bật timer
+                timerInputDisplay.classList.remove('disabled');
+                timerInputDisplay.contentEditable = true;
+                this.classList.remove('btn-secondary');
+                this.classList.add('btn-outline-primary');
+            } else {
+                // Tắt timer
+                timerInputDisplay.classList.add('disabled');
+                timerInputDisplay.contentEditable = false;
+                timerInputDisplay.textContent = '00:03:00'; // Reset về 15 phút
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-secondary');
+            }
+        });
+        
+        // Validation cho trường nhập thời gian
+        timerInputDisplay.addEventListener('blur', function() {
+            const inputValue = this.textContent.trim();
+            const timePattern = /^(\d{2}):(\d{2}):(\d{2})$/;
+            
+            if (!timePattern.test(inputValue)) {
+                // Reset về giá trị mặc định nếu định dạng không hợp lệ
+                this.textContent = '00:03:00';
+                return;
+            }
+            
+            // Kiểm tra giá trị hợp lệ cho giờ, phút, giây
+            const [hours, minutes, seconds] = inputValue.split(':').map(Number);
+            
+            if (hours > 23 || minutes > 59 || seconds > 59) {
+                this.textContent = '00:03:00';
+            }
+        });
+    }
+    function timeStringToSeconds(timeString) {
+        const [hours, minutes, seconds] = timeString.split(':').map(Number);
+        return hours * 3600 + minutes * 60 + seconds;
     }
     
     /**
@@ -102,11 +161,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
         
         // Initialize game logic
-        const gameState = game.init(playerSymbol, difficulty);
+        // const gameState = game.init(playerSymbol, difficulty);
+        //Them
+        const timeInSeconds = timeStringToSeconds(timerInputDisplay.textContent.trim());
+        const gameState = game.init(playerSymbol, difficulty, timeInSeconds);
         
         // Show game panel, hide setup panel
         setupPanel.style.display = 'none';
         gamePanel.style.display = 'block';
+        headlines.style.display = 'none';
         
         // Update UI
         updateBoard();
@@ -305,10 +368,17 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(timerInterval);
             timerInterval = null;
         }
-        
+        const setupCol = document.querySelector('#setup-panel .col-md-6');
+        setTimeout(() => {
+            setupPanel.style.position = 'static';
+            setupPanel.style.left = 'auto';
+            setupPanel.style.transform = 'none';
+        }, 0);
         // Switch back to setup panel
         gamePanel.style.display = 'none';
         setupPanel.style.display = 'block';
+        headlines.style.display = 'block';
+        
         
         // Reset game status
         updateGameStatus(null);

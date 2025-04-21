@@ -15,18 +15,20 @@ class TicTacToeGame {
         this.winningLength = 5; // 5 in a row to win
         this.winningCells = [];
         this.timerDuration = 15 * 60; // 15 minutes in seconds
+        // this.timerDuration = timerInSeconds;
         this.timeRemaining = this.timerDuration;
         this.timerInterval = null;
         // Giữ nguyên code hiện tại và thêm dòng sau:
         this.lastAiMove = null; // Lưu nước đi mới nhất của AI
     }
+    
 
     /**
      * Initialize the game with player options
      * @param {string} playerSymbol - 'X' or 'O'
      * @param {string} difficulty - 'easy' or 'hard'
      */
-    init(playerSymbol, difficulty) {
+    init(playerSymbol, difficulty, timerInSeconds = null) {
         // Reset the game state
         this.board = Array(20)
             .fill()
@@ -37,19 +39,24 @@ class TicTacToeGame {
         this.difficulty = difficulty;
         this.gameActive = true;
         this.winningCells = [];
-
+    
+        // Set timer duration from input if provided
+        if (timerInSeconds !== null) {
+            this.timerDuration = timerInSeconds;
+        }
+    
         // Reset timer
         this.stopTimer();
         this.timeRemaining = this.timerDuration;
         this.startTimer();
-
+    
         // If AI starts
         if (this.currentSymbol === this.aiSymbol) {
             setTimeout(() => {
                 this.makeAiMove();
             }, 500);
         }
-
+    
         return {
             board: this.board,
             currentPlayer: this.currentSymbol,
