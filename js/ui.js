@@ -22,6 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const difficultyEasy = document.getElementById('difficulty-easy');
     const timerButton = document.getElementById('timer-button');
 
+    const gameImages = {
+        win: 'Pics/win.png',  // Thay đổi đường dẫn tùy vào vị trí ảnh của bạn
+        lose: 'Pics/lose.png',
+        draw: 'Pics/draw.png'
+    };
+
     // Game state variables
     let timerInterval;
     let warningThreshold = 60; // 1 minute warning
@@ -42,6 +48,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
         //Them
         setupTimerEvents();
+        createResultModal();
+       
+    }
+    function createResultModal() {
+        // Tạo modal HTML với kích thước nhỏ hơn và hình ảnh lớn hơn
+        const modalHTML = `
+        <div class="modal fade" id="result-modal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-sm modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header py-2">
+                        <h5 class="modal-title small" id="resultModalLabel">Game Result</h5>
+                        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center p-2">
+                        <img id="result-image" src="" alt="Game Result" class="img-fluid mb-2" style="max-height: 250px;">
+                        <div id="result-message" class="small fw-bold"></div>
+                    </div>
+                    <div class="modal-footer py-1">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-sm btn-primary" id="play-again-btn">Play Again</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        // Thêm modal vào body
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Thêm event listener cho nút Play Again
+        document.getElementById('play-again-btn').addEventListener('click', () => {
+            const resultModal = bootstrap.Modal.getInstance(document.getElementById('result-modal'));
+            resultModal.hide();
+            resetGame();
+        });
+    }
+
+    function showResultWithImage(resultType, message) {
+        // Lấy các phần tử modal
+        const resultModal = new bootstrap.Modal(document.getElementById('result-modal'));
+        const resultMessage = document.getElementById('result-message');
+        const resultImage = document.getElementById('result-image');
+        
+        // Cập nhật nội dung
+        resultMessage.textContent = message;
+        resultImage.src = gameImages[resultType];
+        resultImage.alt = `Game ${resultType}`;
+        
+        // Hiển thị modal
+        resultModal.show();
+        
+        // Dừng bộ đếm thời gian
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
     }
     //Them
     function setupTimerEvents() {
@@ -310,8 +371,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add appropriate class
         if (result.gameOver && result.winner) {
             gameStatus.classList.add('alert-success');
+            if (result.winner === game.playerSymbol) {
+                // Người chơi thắng
+                showResultWithImage('win', "Congratulations! You won!");
+            } else {
+                // AI thắng
+                showResultWithImage('lose', "Game over! You lost!");
+            }
         } else if (result.gameOver && result.draw) {
             gameStatus.classList.add('alert-info');
+            showResultWithImage('draw', "Game ended in a draw!");
         } else if (!result.valid) {
             gameStatus.classList.add('alert-warning');
         } else {
@@ -352,7 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 1000);
     }
-    
     /**
      * Reset the game and return to setup
      */
@@ -368,17 +436,11 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(timerInterval);
             timerInterval = null;
         }
-        const setupCol = document.querySelector('#setup-panel .col-md-6');
-        setTimeout(() => {
-            setupPanel.style.position = 'static';
-            setupPanel.style.left = 'auto';
-            setupPanel.style.transform = 'none';
-        }, 0);
         // Switch back to setup panel
         gamePanel.style.display = 'none';
-        setupPanel.style.display = 'block';
+        setupPanel.style.display = ''; // Đổi 'block' thành '' để giữ nguyên style ban đầu
+        setupPanel.className = 'row justify-content-center mb-4';
         headlines.style.display = 'block';
-        
         
         // Reset game status
         updateGameStatus(null);

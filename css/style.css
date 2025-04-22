@@ -9,6 +9,7 @@
     animation: highlight 2s ease-out;
 }
 
+
 @keyframes highlight {
     0% {
         background-color: rgba(255, 217, 102, 0.8);
@@ -39,8 +40,8 @@ body {
 }
 
 .cell {
-    width: 30px;
-    height: 30px;
+    width: 25px;
+    height: 25px;
     background-color: white;
     display: flex;
     align-items: center;
@@ -194,6 +195,35 @@ button:focus, input:focus, .btn:focus {
 #difficulty-easy:checked + label, #difficulty-hard:checked + label {
     background-color: #0d6efd;
     border-color: white;
+}
+#setup-panel {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto;
+}
+
+#setup-panel .col-md-6 {
+    text-align: center;
+}
+
+/* Đảm bảo khi setup-panel được hiển thị lại, nó sẽ giữ nguyên vị trí */
+#setup-panel.show {
+    display: flex !important;
+}
+
+.container.py-4 {
+    padding-top: 100px !important; /* Ghi đè lên class py-4 của Bootstrap */
+}
+#head {
+    color: white;            /* màu chữ */
+}
+#game-panel {
+    margin-top: -40px; /* Dịch lên gần setup-panel hoặc header */
+}
+#game-panel .col-md-8.col-lg-10 {
+    max-width: 80%;   /* hoặc 70%, tùy bạn muốn nhỏ bao nhiêu */
+    margin: 0 auto;   /* căn giữa */
 }
 
 
