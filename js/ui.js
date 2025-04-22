@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const symbolO = document.getElementById('symbol-o');
     const difficultyEasy = document.getElementById('difficulty-easy');
     const timerButton = document.getElementById('timer-button');
-
+    const rulesPanel = createRulesPanel();
+    document.querySelector('.container.py-4').appendChild(rulesPanel);
     const gameImages = {
         win: 'Pics/win.png',  // Thay đổi đường dẫn tùy vào vị trí ảnh của bạn
         lose: 'Pics/lose.png',
@@ -49,7 +50,99 @@ document.addEventListener('DOMContentLoaded', () => {
         //Them
         setupTimerEvents();
         createResultModal();
+        addRulesButton();
        
+    }
+    function createRulesPanel() {
+        const rulesPanel = document.createElement('div');
+        rulesPanel.id = 'rules-panel';
+        rulesPanel.style.display = 'none';
+        
+        rulesPanel.innerHTML = `
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0">Game Rules</h2>
+                        <button class="btn btn-sm btn-light" id="exit-rules-btn">Exit</button>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">The game is played on a 20x20 board.</li>
+                            <li class="list-group-item">Players alternate turns, placing one mark at a time.</li>
+                            <li class="list-group-item">Get 5 of your symbols in a row (horizontally, vertically, or diagonally) to win.</li>
+                            <li class="list-group-item">The game ends in a draw if time runs out or if the board is completely filled.</li>         
+                            <li class="list-group-item">The AI adapts to your skill: from casual random moves to calculated strategies.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+        
+        // Thêm sự kiện cho nút exit ngay sau khi tạo panel
+        setTimeout(() => {
+            const exitBtn = document.getElementById('exit-rules-btn');
+            if (exitBtn) {
+                exitBtn.addEventListener('click', exitRules);
+            }
+        }, 0);
+        
+        return rulesPanel;
+    }
+    
+    function addRulesButton() {
+        // Tạo nút Hướng dẫn chơi
+        const rulesButton = document.createElement('button');
+        rulesButton.type = 'button';
+        rulesButton.className = 'btn btn-info mt-3 w-100'; // Thêm w-100 để nút có chiều rộng 100%
+        rulesButton.textContent = 'HOW TO PLAY ?';
+        rulesButton.id = 'show-rules-btn';
+        // Thêm style trực tiếp để nút có kích thước tương tự nút PLAY NOW
+        rulesButton.style.display = 'block';
+        rulesButton.style.margin = '10px auto'; // Căn giữa nút
+        rulesButton.style.width = 'auto'; // Chiều rộng tự động theo nội dung
+        rulesButton.style.minWidth = '100px'; // Chiều rộng tối thiểu
+        rulesButton.style.maxWidth = '140px'; // Chiều rộng tối đa
+        rulesButton.style.color='white';
+        
+        rulesButton.addEventListener('mouseenter', () => {
+            rulesButton.style.backgroundColor = '#21bad9'; // màu hover
+        });
+    
+        rulesButton.addEventListener('mouseleave', () => {
+            rulesButton.style.transform = 'scale(1)';
+            rulesButton.style.backgroundColor = '#0dcaf0'; // trở lại màu gốc
+        });
+        // Thêm sự kiện click
+        rulesButton.addEventListener('click', showRules);
+        
+        // Thêm nút vào bên dưới nút PLAY NOW
+        document.querySelector('#play-now').parentNode.appendChild(rulesButton);
+    }
+    
+    /**
+     * Hiển thị hướng dẫn chơi
+     */
+    function showRules() {
+        // Ẩn các panel khác
+        setupPanel.style.display = 'none';
+        gamePanel.style.display = 'none';
+        
+        // Hiện panel hướng dẫn
+        document.getElementById('rules-panel').style.display = 'block';
+    }
+    
+    /**
+     * Quay lại từ hướng dẫn chơi
+     */
+    function exitRules() {
+        // Ẩn panel hướng dẫn
+        document.getElementById('rules-panel').style.display = 'none';
+        
+        // Hiện lại setup panel
+        setupPanel.style.display = '';
+        setupPanel.className = 'row justify-content-center mb-4';
     }
     function createResultModal() {
         // Tạo modal HTML với kích thước nhỏ hơn và hình ảnh lớn hơn
