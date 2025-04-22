@@ -6,20 +6,11 @@ Một trò chơi Tic Tac Toe đơn giản được phát triển với HTML, CSS
 
 Đây là một trò chơi Tic Tac Toe truyền thống với giao diện thân thiện với người dùng. Trò chơi cho phép người chơi và AI thay phiên nhau đánh dấu X và O trên bảng 20x20. Người chơi hay AI đầu tiên tạo được một hàng, cột hoặc đường chéo hoàn chỉnh sẽ chiến thắng.
 
-Các thành viên bao gồm:
-1.Hoàng Trọng An - 221230723 
-2.Phạm Thành An - 221230727 
-3.Lê Tiến Chung - 221230755 
+## Các thành viên
 
-
-## Tính năng
-
-- Giao diện đơn giản, thân thiện với người dùng
-- Hiển thị lượt chơi hiện tại (X hoặc O)
-- Thông báo người chiến thắng, thua hoặc hòa
-- Nút new game để bắt đầu ván mới
-- Bộ đếm thời gian
-- Hiệu ứng trực quan khi đánh dấu và chiến thắng
+- Hoàng Trọng An - 221230723 
+- Phạm Thành An - 221230727 
+- Lê Tiến Chung - 221230755 
 
 ## Công nghệ sử dụng
 
